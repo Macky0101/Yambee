@@ -1,5 +1,4 @@
 import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const baseURL = 'https://demo-swedd.org/api';
 
@@ -7,9 +6,10 @@ const axiosInstance = axios.create({
     baseURL,
 });
 
-export const login = async (email, password, navigation) => {
+export const login = async (email, password) => {
     try {
-        const response = await axiosInstance.post('', { email, password });       
+        const response = await axiosInstance.post('/login.php', { login: email, pass: password });
+        console.log('response', response.data);
         return response.data;
     } catch (error) {
         console.error('Erreur lors de la connexion:', error);
@@ -17,13 +17,34 @@ export const login = async (email, password, navigation) => {
     }
 };
 
-
-export const ListClasseur = async () => {
+export const ListClasseur = async (clp_structure) => {
     try {
-      const response = await axiosInstance.get(`/classeur.php?classeur=true`);
-      console.log('Liste des Classeur:', response.data);
-      return response.data;
+        const response = await axiosInstance.get(`/classeur.php?Partenaire=${clp_structure}`);
+        return response.data;
     } catch (error) {
-      throw error;
+        console.error('Erreur lors de la récupération des classeurs:', error);
+        throw error;
     }
-  };
+};
+
+
+
+
+export const getFeuille = async (classeurId, clp_structure) => {
+  try {
+    const response = await axios.get(`https://demo-swedd.org/api/feuille.php`, {
+      params: {
+        Classeur: classeurId,
+        Partenaire: clp_structure,
+      },
+    });
+
+    return response.data; 
+  } catch (error) {
+    console.error('Erreur lors de la récupération de la feuille:', error);
+    throw error; 
+  }
+};
+
+
+
