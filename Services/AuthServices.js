@@ -48,3 +48,16 @@ export const getFeuille = async (classeurId, clp_structure) => {
 
 
 
+export const getFormulaire = async (codeFeuille) => {
+  try {
+      const response = await axios.get(`${baseURL}/classeurfiche.php`, {
+          params: {
+              code_feuille: codeFeuille,
+          },
+      });
+      return response.data;
+  } catch (error) {
+      console.error('Erreur lors de la récupération du formulaire:', error);
+      throw error;
+  }
+};

@@ -77,7 +77,7 @@ const ClasseurDetails = ({ route }) => {
   }, [classeur]);
 
   const navigateToFeuilleDetail = (feuille) => {
-    navigation.navigate('FeuilleDetail', { feuille });
+    navigation.navigate('FeuilleDetail', { codeFeuille: feuille['Code_Feuille'] });
   };
 
   const renderFeuille = ({ item }) => (

@@ -6,6 +6,9 @@ import LoginPage from '../src/LoginPage/LoginPage';
 import HomePage from '../src/HomePage/HomePage';
 import ClasseurDetails from '../src/ClasseurDetails/ClasseurDetails';
 import LoadingScreen from '../src/LoadingScreen/LoadingScreen'; 
+import FeuilleDetail from '../src/Formulaires/FeuilleDetail';
+import SavedDataScreen from '../src/SavedDataScreen/SavedDataScreen';
+import QrCodeScanner from '../src/Formulaires/QrCodeScanner';
 
 const Stack = createStackNavigator();
 
@@ -67,6 +70,24 @@ const Routes = () => {
           component={LoadingScreen} 
           options={{ headerShown: false }}
 
+        />
+         <Stack.Screen 
+          name="FeuilleDetail" 
+          component={FeuilleDetail} 
+          // options={{ headerShown: false }}
+          options={{ title: 'Formulaire' }} 
+        />
+         <Stack.Screen 
+          name="SavedDataScreen" 
+          component={SavedDataScreen} 
+          // options={{ headerShown: false }}
+          options={{ title: 'SavedDataScreen' }} 
+        />
+         <Stack.Screen 
+          name="QrCodeScanner" 
+          component={QrCodeScanner} 
+          // options={{ headerShown: false }}
+          options={{ title: 'Qr Code Scanner' }} 
         />
       </Stack.Navigator>
     </NavigationContainer>
