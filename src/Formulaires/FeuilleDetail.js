@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, TextInput, Switch, ScrollView,
@@ -6,20 +7,20 @@ import {
 import { useRoute, useNavigation } from '@react-navigation/native';
 import * as DocumentPicker from 'expo-document-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { Camera } from 'expo-camera';
+// import { Camera } from 'expo-camera';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import Toast from 'react-native-toast-message';
-// import { ColorPicker } from 'react-native-color-picker';
-// import Slider from '@react-native-community/slider';
-
+import * as ImagePicker from 'expo-image-picker';
+import ColorPicker from 'react-native-wheel-color-picker';
 
 import { getFormulaire } from '../../Services/AuthServices';
 
 const FeuilleDetail = () => {
   const route = useRoute();
   const navigation = useNavigation();
-  const { codeFeuille, formData: existingFormData } = route.params || {};
+  const { codeFeuille, formData: existingFormData, qrCodeData } = route.params || {};
+  // const { codeFeuille, formData: existingFormData } = route.params || {};
   const [formFields, setFormFields] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -29,12 +30,45 @@ const FeuilleDetail = () => {
   const [showModal, setShowModal] = useState(false);
   const [showModalCHOIX, setShowModalCHOIX] = useState(false);
   const [modalData, setModalData] = useState([]);
-  const [selectedField, setSelectedField] = useState(null);
   const [allRequiredFilled, setAllRequiredFilled] = useState(false);
-  const [selectedImage, setSelectedImage] = useState(null);
-  // const [showColorPicker, setShowColorPicker] = useState(false);
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [currentColor, setCurrentColor] = useState('#ffffff');
+
+  const [selectedImage, setSelectedImage] = React.useState(null);
+  const [showImagePicker, setShowImagePicker] = React.useState(false);
+  const [selectedField, setSelectedField] = React.useState(null);
+
 
   useEffect(() => {
+    console.log('codeFeuille:', codeFeuille);
+  }, []);
+
+  useEffect(() => {
+    if (qrCodeData) {
+      handleFieldChange(selectedField, qrCodeData);
+    }
+  }, [qrCodeData]);
+
+  useEffect(() => {
+    if (existingFormData) {
+      setFormData(existingFormData);
+    }
+  }, []);
+  
+
+  useEffect(() => {
+    (async () => {
+      if (Platform.OS !== 'web') {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+          alert('Permission d\'accès à la bibliothèque de médias requise.');
+        }
+      }
+    })();
+
+
+
+
     const handleConnectivityChange = async (state) => {
       setIsConnected(state.isConnected);
       if (!state.isConnected) {
@@ -60,6 +94,7 @@ const FeuilleDetail = () => {
       unsubscribe();
     };
   }, []);
+  
 
   const fetchFormFields = async () => {
     try {
@@ -84,7 +119,9 @@ const FeuilleDetail = () => {
       // Check if all required fields are filled
       const allFilled = formFields.every(field => {
         if (field.requis) {
+          console.log(`Champ ${fieldName} mis à jour avec la valeur : ${value}`);
           return newData[field.nomColonne] !== undefined && newData[field.nomColonne] !== '';
+
         }
         return true;
       });
@@ -93,22 +130,55 @@ const FeuilleDetail = () => {
       return newData;
     });
   };
+  const selectImage = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 1,
+    });
+
+    if (!result.cancelled) {
+      setSelectedImage(result.uri);
+      handleFieldChange(selectedField, result.uri);
+      setShowImagePicker(false);
+    }
+  };
+
+  const takePhoto = async () => {
+    let result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 1,
+    });
+
+    if (!result.cancelled) {
+      setSelectedImage(result.uri);
+      handleFieldChange(selectedField, result.uri);
+      setShowImagePicker(false);
+    }
+  };
+
+
 
   const handleSaveData = async () => {
     if (selectedImage) {
-      handleFieldChange('image', selectedImage); // Remplacez 'image' par le nom de votre champ d'image
+      handleFieldChange('image', selectedImage);
     }
     try {
       const savedData = await AsyncStorage.getItem('savedFormData');
       const savedDataArray = savedData ? JSON.parse(savedData) : [];
+      const newFormData = { ...formData, codeFeuille };
+      // const newFormData = { ...formData, codeFeuille, date: new Date().toISOString() };
+  
       if (existingFormData) {
         const index = savedDataArray.findIndex(data => data.id === existingFormData.id);
         if (index !== -1) {
-          savedDataArray[index] = formData;
+          savedDataArray[index] = newFormData;
         }
       } else {
-        savedDataArray.push(formData);
+        savedDataArray.push(newFormData);
       }
+  
       await AsyncStorage.setItem('savedFormData', JSON.stringify(savedDataArray));
       Toast.show({
         type: 'success',
@@ -120,7 +190,81 @@ const FeuilleDetail = () => {
       console.error('Erreur lors de l\'enregistrement des données du formulaire:', error);
     }
   };
+    // Initialiser formData avec les données existantes
+  useEffect(() => {
+    console.log('Received formData:', existingFormData);
+    if (existingFormData) {
+      setFormData(existingFormData);
+      setLoading(false);
+    }
+  }, [existingFormData]);
+  
+  // const handleSaveData = async () => {
+  //   try {
+  //     const savedData = await AsyncStorage.getItem('savedFormData');
+  //     const savedDataArray = savedData ? JSON.parse(savedData) : [];
+  //     const newFormData = { ...formData, codeFeuille };
 
+  //     if (existingFormData) {
+  //       const updatedDataArray = savedDataArray.map(item => {
+  //         if (item.codeFeuille === codeFeuille) {
+  //           return newFormData;
+  //         }
+  //         return item;
+  //       });
+  //       await AsyncStorage.setItem('savedFormData', JSON.stringify(updatedDataArray));
+  //     } else {
+  //       const updatedDataArray = [...savedDataArray, newFormData];
+  //       await AsyncStorage.setItem('savedFormData', JSON.stringify(updatedDataArray));
+  //     }
+
+  //     Toast.show({
+  //       type: 'success',
+  //       text1: 'Données sauvegardées avec succès!',
+  //     });
+  //     navigation.goBack();
+  //   } catch (error) {
+  //     console.error('Erreur lors de la sauvegarde des données:', error);
+  //     Toast.show({
+  //       type: 'error',
+  //       text1: 'Erreur lors de la sauvegarde des données!',
+  //     });
+  //   }
+  // };
+  // const handleSaveData = async () => {
+  //   try {
+  //     const savedData = await AsyncStorage.getItem('savedFormData');
+  //     const savedDataArray = savedData ? JSON.parse(savedData) : [];
+  //     const newFormData = { ...formData, codeFeuille };
+  
+  //     // Chercher l'index de l'enregistrement à modifier
+  //     const index = savedDataArray.findIndex(data => data.codeFeuille === codeFeuille);
+  
+  //     if (index !== -1) {
+  //       // Mettre à jour l'enregistrement existant
+  //       savedDataArray[index] = newFormData;
+  //     } else {
+  //       // Ajouter un nouvel enregistrement s'il n'existe pas déjà
+  //       savedDataArray.push(newFormData);
+  //     }
+  
+  //     // Sauvegarder l'ensemble des données
+  //     await AsyncStorage.setItem('savedFormData', JSON.stringify(savedDataArray));
+  
+  //     Toast.show({
+  //       type: 'success',
+  //       text1: 'Données sauvegardées avec succès!',
+  //     });
+  //     // navigation.goBack();
+  //   } catch (error) {
+  //     console.error('Erreur lors de la sauvegarde des données:', error);
+  //     Toast.show({
+  //       type: 'error',
+  //       text1: 'Erreur lors de la sauvegarde des données!',
+  //     });
+  //   }
+  // };
+  
   const renderField = (field) => {
     switch (field.type) {
       case 'TEXT':
@@ -136,33 +280,71 @@ const FeuilleDetail = () => {
               />
             </View>
           );
-          // case 'COULEUR':
-          //   return (
-          //     <View key={field.nomColonne} style={styles.fieldContainer}>
-          //       <Text>{field.libelle}{field.requis && <Text style={styles.required}> *</Text>}</Text>
-          //       <TouchableOpacity onPress={() => setShowColorPicker(true)}>
-          //         <View style={[styles.input, { backgroundColor: formData[field.nomColonne] || '#FFFFFF' }]}>
-          //           <Text style={{ color: formData[field.nomColonne] ? 'white' : 'black' }}>
-          //             {formData[field.nomColonne] || 'Sélectionnez une couleur'}
-          //           </Text>
-          //         </View>
-          //       </TouchableOpacity>
-          //       {showColorPicker && (
-          //         <Modal visible={true} transparent={true} animationType="slide">
-          //           <View style={styles.colorPickerContainer}>
-          //             <ColorPicker
-          //               onColorSelected={(color) => {
-          //                 handleFieldChange(field.nomColonne, color);
-          //                 setShowColorPicker(false);
-          //               }}
-          //               style={{ flex: 1 }}
-          //             />
-          //             <Button title="Fermer" onPress={() => setShowColorPicker(false)} />
-          //           </View>
-          //         </Modal>
-          //       )}
-          //     </View>
-          //   );
+          case 'COULEUR':
+            return (
+              <View key={field.nomColonne} style={styles.fieldContainer}>
+                <Text>{field.libelle}{field.requis && <Text style={styles.required}> *</Text>}</Text>
+                <TouchableOpacity onPress={() => { setShowColorPicker(true); setSelectedField(field.nomColonne); }}>
+                  <View style={[styles.input, { backgroundColor: formData[field.nomColonne] || '#FFFFFF' }]}>
+                    <Text style={{ color: formData[field.nomColonne] ? 'white' : 'black' }}>
+                      {formData[field.nomColonne] || 'Sélectionnez une couleur'}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+                <Modal visible={showColorPicker} transparent={true}>
+                  <View style={styles.modalOverlay}>
+                    <View style={styles.modalContainer}>
+                      <ColorPicker
+                        color={currentColor}
+                        onColorChange={(color) => setCurrentColor(color)}
+                        thumbSize={40}
+                        sliderSize={40}
+                        noSnap={true}
+                        row={false}
+                        swatchesLast={true}
+                        swatches={true}
+                        discrete={false}
+                        wheelLodingIndicator={<ActivityIndicator size={40} />}
+                        sliderLodingIndicator={<ActivityIndicator size={20} />}
+                        useNativeDriver={false}
+                        useNativeLayout={false}
+                      />
+                      <Button title="Confirmer" onPress={() => {
+                        handleFieldChange(selectedField, currentColor);
+                        setShowColorPicker(false);
+                      }} />
+                      <Button title="Fermer" onPress={() => setShowColorPicker(false)} />
+                    </View>
+                  </View>
+                </Modal>
+              </View>
+            );
+            case 'FICHIER':
+              return (
+                <View key={field.nomColonne} style={styles.fieldContainer}>
+                  <Text>{field.libelle}{field.requis && <Text style={styles.required}> *</Text>}</Text>
+                  <TouchableOpacity onPress={() => { setShowImagePicker(true); setSelectedField(field.nomColonne); }}>
+                    <View style={styles.input}>
+                      {selectedImage ? (
+                        <Image source={{ uri: selectedImage }} style={{ width: 100, height: 100 }} />
+                      ) : (
+                        <Text>Sélectionner une image</Text>
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                  <Modal visible={showImagePicker} transparent={true}>
+                    <View style={styles.modalOverlay}>
+                      <View style={styles.modalContainer}>
+                        <Button title="Sélectionner depuis la galerie" onPress={selectImage} />
+                        <Button title="Prendre une photo" onPress={takePhoto} />
+                        <Button title="Fermer" onPress={() => setShowImagePicker(false)} />
+                      </View>
+                    </View>
+                  </Modal>
+                </View>
+              );
+          
+
       case 'INT':
       case 'DOUBLE':
         return (
@@ -237,33 +419,33 @@ const FeuilleDetail = () => {
             />
           </View>
         );
-        case 'FICHIER':
-          return (
-            <View key={field.nomColonne} style={styles.fieldContainer}>
-              <Text>{field.libelle}{field.requis && <Text style={styles.required}> *</Text>}</Text>
-              <Button
-                title="Sélectionner une image"
-                onPress={async () => {
-                  try {
-                    const result = await DocumentPicker.getDocumentAsync();
-                    console.log('Résultat DocumentPicker :', result); // Vérification du résultat complet
-                    if (result.type === 'success') {
-                      console.log('URI de l\'image sélectionnée :', result.uri); // Vérification dans la console
-                      handleFieldChange(field.nomColonne, result.uri);
-                      setSelectedImage(result.uri); // Mettre à jour l'image sélectionnée
-                    } else {
-                      console.warn('Sélection annulée ou erreur :', result);
-                    }
-                  } catch (error) {
-                    console.error('Erreur lors de la sélection du fichier :', error);
-                  }
-                }}
-              />
-              {selectedImage && (
-                <Image source={{ uri: selectedImage }} style={{ width: 200, height: 200, marginTop: 10 }} />
-              )}
-            </View>
-          );
+        // case 'FICHIER':
+        //   return (
+        //     <View key={field.nomColonne} style={styles.fieldContainer}>
+        //       <Text>{field.libelle}{field.requis && <Text style={styles.required}> *</Text>}</Text>
+        //       <Button
+        //         title="Sélectionner une image"
+        //         onPress={async () => {
+        //           try {
+        //             const result = await DocumentPicker.getDocumentAsync();
+        //             console.log('Résultat DocumentPicker :', result); // Vérification du résultat complet
+        //             if (result.type === 'success') {
+        //               console.log('URI de l\'image sélectionnée :', result.uri); // Vérification dans la console
+        //               handleFieldChange(field.nomColonne, result.uri);
+        //               setSelectedImage(result.uri); // Mettre à jour l'image sélectionnée
+        //             } else {
+        //               console.warn('Sélection annulée ou erreur :', result);
+        //             }
+        //           } catch (error) {
+        //             console.error('Erreur lors de la sélection du fichier :', error);
+        //           }
+        //         }}
+        //       />
+        //       {selectedImage && (
+        //         <Image source={{ uri: selectedImage }} style={{ width: 200, height: 200, marginTop: 10 }} />
+        //       )}
+        //     </View>
+        //   );
         
         case 'FEUILLE':
           return (
@@ -303,9 +485,25 @@ const FeuilleDetail = () => {
             ))}
           </View>
         );
+        case 'QRCODE':
+          return (
+            <View key={field.nomColonne} style={styles.fieldContainer}>
+              <Text>{field.libelle}{field.requis && <Text style={styles.required}> *</Text>}</Text>
+              <Button
+                title="Scan QR Code"
+                onPress={() => {
+                  setSelectedField(field.nomColonne);
+                  navigation.navigate('QrCodeScanner');
+                }}
+              />
+            </View>
+          );
       default:
         return null;
     }
+  };
+  const handleViewData = () => {
+    navigation.navigate('SavedDataScreen', { codeFeuille });
   };
 
   return (
@@ -329,11 +527,12 @@ const FeuilleDetail = () => {
   </TouchableOpacity>
 
   <TouchableOpacity
-    onPress={() => navigation.navigate('SavedDataScreen')}
+    onPress={handleViewData}
     style={styles.dataButton}
   >
-    <Text style={styles.buttonText}>Data</Text>
+    <Text style={styles.buttonText}>Voir les données</Text>
   </TouchableOpacity>
+
 </View>
 
 

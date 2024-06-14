@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Text, View, StyleSheet, Button, TouchableOpacity } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import { useNavigation } from '@react-navigation/native';
 
 export default function FeuilleDetail() {
   const [facing, setFacing] = useState('back');
   const [scanned, setScanned] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
-
+  const navigation = useNavigation();
   const handleBarCodeScanned = ({ type, data }) => {
     setScanned(true);
-    alert(`Bar code with type ${type} and data ${data} has been scanned!`);
+    navigation.navigate('FeuilleDetail', { qrCodeData: data });
   };
 
   useEffect(() => {
