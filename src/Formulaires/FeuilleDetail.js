@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, TextInput, Switch, ScrollView,
-  ActivityIndicator, StyleSheet, Button, Alert, Modal, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform
+  ActivityIndicator, StyleSheet, Button, Alert, Modal, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform,Image
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import * as DocumentPicker from 'expo-document-picker';
@@ -13,7 +13,7 @@ import NetInfo from '@react-native-community/netinfo';
 import Toast from 'react-native-toast-message';
 import * as ImagePicker from 'expo-image-picker';
 import ColorPicker from 'react-native-wheel-color-picker';
-
+import * as Crypto from 'expo-crypto';
 import { getFormulaire } from '../../Services/AuthServices';
 
 const FeuilleDetail = () => {
@@ -38,6 +38,13 @@ const FeuilleDetail = () => {
   const [showImagePicker, setShowImagePicker] = React.useState(false);
   const [selectedField, setSelectedField] = React.useState(null);
 
+  // Fonction pour générer un UUID
+const generateUUID = async () => {
+  return await Crypto.digestStringAsync(
+    Crypto.CryptoDigestAlgorithm.SHA256,
+    (new Date()).toISOString()
+  );
+};
 
   useEffect(() => {
     console.log('codeFeuille:', codeFeuille);
@@ -137,10 +144,11 @@ const FeuilleDetail = () => {
       quality: 1,
     });
 
-    if (!result.cancelled) {
-      setSelectedImage(result.uri);
-      handleFieldChange(selectedField, result.uri);
+    if (!result.canceled) {
+      setSelectedImage(result.assets[0].uri);
+      handleFieldChange(selectedField, result.assets[0].uri);
       setShowImagePicker(false);
+      console.log('Image sélectionnée : ', result.assets[0].uri);
     }
   };
 
@@ -151,24 +159,25 @@ const FeuilleDetail = () => {
       quality: 1,
     });
 
-    if (!result.cancelled) {
-      setSelectedImage(result.uri);
-      handleFieldChange(selectedField, result.uri);
+    if (!result.canceled) {
+      setSelectedImage(result.assets[0].uri);
+      handleFieldChange(selectedField, result.assets[0].uri);
       setShowImagePicker(false);
+      console.log('Photo prise : ', result.assets[0].uri);
     }
   };
 
-
-
   const handleSaveData = async () => {
-    if (selectedImage) {
-      handleFieldChange('image', selectedImage);
-    }
     try {
       const savedData = await AsyncStorage.getItem('savedFormData');
       const savedDataArray = savedData ? JSON.parse(savedData) : [];
-      const newFormData = { ...formData, codeFeuille };
-      // const newFormData = { ...formData, codeFeuille, date: new Date().toISOString() };
+      const newFormData = {
+        ...formData,
+        codeFeuille,
+        id: existingFormData?.id || await generateUUID(),
+        // date: new Date().toISOString()
+      };
+  console.log('Saved data : ', newFormData);
   
       if (existingFormData) {
         const index = savedDataArray.findIndex(data => data.id === existingFormData.id);
@@ -199,71 +208,6 @@ const FeuilleDetail = () => {
     }
   }, [existingFormData]);
   
-  // const handleSaveData = async () => {
-  //   try {
-  //     const savedData = await AsyncStorage.getItem('savedFormData');
-  //     const savedDataArray = savedData ? JSON.parse(savedData) : [];
-  //     const newFormData = { ...formData, codeFeuille };
-
-  //     if (existingFormData) {
-  //       const updatedDataArray = savedDataArray.map(item => {
-  //         if (item.codeFeuille === codeFeuille) {
-  //           return newFormData;
-  //         }
-  //         return item;
-  //       });
-  //       await AsyncStorage.setItem('savedFormData', JSON.stringify(updatedDataArray));
-  //     } else {
-  //       const updatedDataArray = [...savedDataArray, newFormData];
-  //       await AsyncStorage.setItem('savedFormData', JSON.stringify(updatedDataArray));
-  //     }
-
-  //     Toast.show({
-  //       type: 'success',
-  //       text1: 'Données sauvegardées avec succès!',
-  //     });
-  //     navigation.goBack();
-  //   } catch (error) {
-  //     console.error('Erreur lors de la sauvegarde des données:', error);
-  //     Toast.show({
-  //       type: 'error',
-  //       text1: 'Erreur lors de la sauvegarde des données!',
-  //     });
-  //   }
-  // };
-  // const handleSaveData = async () => {
-  //   try {
-  //     const savedData = await AsyncStorage.getItem('savedFormData');
-  //     const savedDataArray = savedData ? JSON.parse(savedData) : [];
-  //     const newFormData = { ...formData, codeFeuille };
-  
-  //     // Chercher l'index de l'enregistrement à modifier
-  //     const index = savedDataArray.findIndex(data => data.codeFeuille === codeFeuille);
-  
-  //     if (index !== -1) {
-  //       // Mettre à jour l'enregistrement existant
-  //       savedDataArray[index] = newFormData;
-  //     } else {
-  //       // Ajouter un nouvel enregistrement s'il n'existe pas déjà
-  //       savedDataArray.push(newFormData);
-  //     }
-  
-  //     // Sauvegarder l'ensemble des données
-  //     await AsyncStorage.setItem('savedFormData', JSON.stringify(savedDataArray));
-  
-  //     Toast.show({
-  //       type: 'success',
-  //       text1: 'Données sauvegardées avec succès!',
-  //     });
-  //     // navigation.goBack();
-  //   } catch (error) {
-  //     console.error('Erreur lors de la sauvegarde des données:', error);
-  //     Toast.show({
-  //       type: 'error',
-  //       text1: 'Erreur lors de la sauvegarde des données!',
-  //     });
-  //   }
-  // };
   
   const renderField = (field) => {
     switch (field.type) {
@@ -322,26 +266,26 @@ const FeuilleDetail = () => {
             case 'FICHIER':
               return (
                 <View key={field.nomColonne} style={styles.fieldContainer}>
-                  <Text>{field.libelle}{field.requis && <Text style={styles.required}> *</Text>}</Text>
-                  <TouchableOpacity onPress={() => { setShowImagePicker(true); setSelectedField(field.nomColonne); }}>
-                    <View style={styles.input}>
-                      {selectedImage ? (
-                        <Image source={{ uri: selectedImage }} style={{ width: 100, height: 100 }} />
-                      ) : (
-                        <Text>Sélectionner une image</Text>
-                      )}
-                    </View>
-                  </TouchableOpacity>
-                  <Modal visible={showImagePicker} transparent={true}>
-                    <View style={styles.modalOverlay}>
-                      <View style={styles.modalContainer}>
-                        <Button title="Sélectionner depuis la galerie" onPress={selectImage} />
-                        <Button title="Prendre une photo" onPress={takePhoto} />
-                        <Button title="Fermer" onPress={() => setShowImagePicker(false)} />
-                      </View>
-                    </View>
-                  </Modal>
+            <Text>{field.libelle}{field.requis && <Text style={styles.required}> *</Text>}</Text>
+            <TouchableOpacity onPress={() => { setShowImagePicker(true); setSelectedField(field.nomColonne); }}>
+              <View style={styles.input}>
+                {formData[field.nomColonne] ? (
+                  <Image source={{ uri: formData[field.nomColonne] }} style={styles.imagePreview} />
+                ) : (
+                  <Text>Sélectionnez une image</Text>
+                )}
+              </View>
+            </TouchableOpacity>
+            <Modal visible={showImagePicker} transparent={true}>
+              <View style={styles.modalOverlay}>
+                <View style={styles.modalContainer}>
+                  <Button title="Choisir dans la bibliothèque" onPress={selectImage} />
+                  <Button title="Prendre une photo" onPress={takePhoto} />
+                  <Button title="Annuler" onPress={() => setShowImagePicker(false)} />
                 </View>
+              </View>
+            </Modal>
+          </View>
               );
           
 
@@ -419,33 +363,7 @@ const FeuilleDetail = () => {
             />
           </View>
         );
-        // case 'FICHIER':
-        //   return (
-        //     <View key={field.nomColonne} style={styles.fieldContainer}>
-        //       <Text>{field.libelle}{field.requis && <Text style={styles.required}> *</Text>}</Text>
-        //       <Button
-        //         title="Sélectionner une image"
-        //         onPress={async () => {
-        //           try {
-        //             const result = await DocumentPicker.getDocumentAsync();
-        //             console.log('Résultat DocumentPicker :', result); // Vérification du résultat complet
-        //             if (result.type === 'success') {
-        //               console.log('URI de l\'image sélectionnée :', result.uri); // Vérification dans la console
-        //               handleFieldChange(field.nomColonne, result.uri);
-        //               setSelectedImage(result.uri); // Mettre à jour l'image sélectionnée
-        //             } else {
-        //               console.warn('Sélection annulée ou erreur :', result);
-        //             }
-        //           } catch (error) {
-        //             console.error('Erreur lors de la sélection du fichier :', error);
-        //           }
-        //         }}
-        //       />
-        //       {selectedImage && (
-        //         <Image source={{ uri: selectedImage }} style={{ width: 200, height: 200, marginTop: 10 }} />
-        //       )}
-        //     </View>
-        //   );
+      
         
         case 'FEUILLE':
           return (

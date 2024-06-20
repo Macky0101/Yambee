@@ -81,7 +81,7 @@ const Routes = () => {
           name="SavedDataScreen" 
           component={SavedDataScreen} 
           // options={{ headerShown: false }}
-          options={{ title: 'SavedDataScreen' }} 
+          options={{ title: 'données enregistrer' }} 
         />
          <Stack.Screen 
           name="QrCodeScanner" 

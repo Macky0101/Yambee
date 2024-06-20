@@ -26,7 +26,7 @@ export default function FeuilleDetail() {
   if (!permission.granted) {
     return (
       <View style={styles.container}>
-        <Text style={{ textAlign: 'center' }}>We need your permission to show the camera</Text>
+        <Text style={{ textAlign: 'center' }}>Nous avons besoin de votre permission pour montrer la caméra</Text>
         <Button onPress={requestPermission} title="grant permission" />
       </View>
     );

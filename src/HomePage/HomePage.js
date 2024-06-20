@@ -1,16 +1,23 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, TextInput } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import Toast from 'react-native-toast-message';
 import { ListClasseur } from '../../Services/AuthServices';
 import styles from './Styles';
+import { MaterialIcons } from '@expo/vector-icons';
 
 const HomePage = () => {
   const [classeurs, setClasseurs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchText, setSearchText] = useState('');
+
   const navigation = useNavigation();
+
+  const handleSearch = (text) => {
+    setSearchText(text);
+  };
 
   const fetchData = async () => {
     const netInfo = await NetInfo.fetch();
@@ -60,18 +67,21 @@ const HomePage = () => {
   }
 
   const renderClasseurs = () => {
-    if (classeurs.length === 0) {
+    const filteredClasseurs = classeurs.filter(item => 
+      item['Libelle classeur'].toLowerCase().includes(searchText.toLowerCase())
+    );
+
+    if (filteredClasseurs.length === 0) {
       return <Text style={styles.emptyMessage}>Aucun classeur disponible</Text>;
     }
 
-    return classeurs.map((item) => (
+    return filteredClasseurs.map((item) => (
       <TouchableOpacity
         key={item.Id}
         style={styles.classeurContainer}
         onPress={() => navigation.navigate('ClasseurDetails', { classeur: item })}
       >
         <View style={styles.classeur}>
-          {/* Contenu du classeur */}
           <View style={styles.folderIcon}>
             <View style={[styles.folderTop, { backgroundColor: item['Couleur classeur'] }]} />
             <View style={[styles.folderBody]}>
@@ -90,6 +100,15 @@ const HomePage = () => {
 
   return (
     <View style={styles.container}>
+      <View style={styles.searchContainer}>
+        <MaterialIcons name="search" size={24} color="black" style={styles.searchIcon} />
+        <TextInput
+          style={styles.searchbar}
+          placeholder="Rechercher un classeur..."
+          onChangeText={handleSearch}
+          value={searchText}
+        />
+      </View>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         {renderClasseurs()}
       </ScrollView>

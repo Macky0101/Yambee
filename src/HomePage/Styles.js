@@ -85,6 +85,26 @@ const styles = StyleSheet.create({
     color: '#757575',
     marginTop: 4,
   },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#dddddd',
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    marginHorizontal: 20,
+    // marginTop: 10,
+    marginBottom:10,
+  },
+  searchIcon: {
+    marginRight: 10,
+  },
+  searchbar: {
+    flex: 1,
+    fontSize: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    padding:10
+
+  },
 });
 
 export default styles;
