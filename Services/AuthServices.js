@@ -20,6 +20,7 @@ export const login = async (email, password) => {
 export const ListClasseur = async (clp_structure) => {
     try {
         const response = await axiosInstance.get(`/classeur.php?Partenaire=${clp_structure}`);
+        // console.log('response', response.data);
         return response.data;
     } catch (error) {
         console.error('Erreur lors de la récupération des classeurs:', error);

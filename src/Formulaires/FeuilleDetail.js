@@ -167,6 +167,38 @@ const generateUUID = async () => {
     }
   };
 
+  // const handleSaveData = async () => {
+  //   try {
+  //     const savedData = await AsyncStorage.getItem('savedFormData');
+  //     const savedDataArray = savedData ? JSON.parse(savedData) : [];
+  //     const newFormData = {
+  //       ...formData,
+  //       codeFeuille,
+  //       id: existingFormData?.id || await generateUUID(),
+  //       // date: new Date().toISOString()
+  //     };
+  // console.log('Saved data : ', newFormData);
+  
+  //     if (existingFormData) {
+  //       const index = savedDataArray.findIndex(data => data.id === existingFormData.id);
+  //       if (index !== -1) {
+  //         savedDataArray[index] = newFormData;
+  //       }
+  //     } else {
+  //       savedDataArray.push(newFormData);
+  //     }
+  
+  //     await AsyncStorage.setItem('savedFormData', JSON.stringify(savedDataArray));
+  //     Toast.show({
+  //       type: 'success',
+  //       text1: 'Données enregistrées',
+  //       text2: 'Les données du formulaire ont été enregistrées avec succès.'
+  //     });
+  //     navigation.goBack();
+  //   } catch (error) {
+  //     console.error('Erreur lors de l\'enregistrement des données du formulaire:', error);
+  //   }
+  // };
   const handleSaveData = async () => {
     try {
       const savedData = await AsyncStorage.getItem('savedFormData');
@@ -175,9 +207,7 @@ const generateUUID = async () => {
         ...formData,
         codeFeuille,
         id: existingFormData?.id || await generateUUID(),
-        // date: new Date().toISOString()
       };
-  console.log('Saved data : ', newFormData);
   
       if (existingFormData) {
         const index = savedDataArray.findIndex(data => data.id === existingFormData.id);
@@ -193,12 +223,19 @@ const generateUUID = async () => {
         type: 'success',
         text1: 'Données enregistrées',
         text2: 'Les données du formulaire ont été enregistrées avec succès.'
+
       });
-      navigation.goBack();
+  
+      // Réinitialiser le formulaire après l'enregistrement
+      setFormData({});
+      setSelectedDate(new Date());
+      setSelectedChoices({});
+      setSelectedImage(null);
     } catch (error) {
       console.error('Erreur lors de l\'enregistrement des données du formulaire:', error);
     }
   };
+  
     // Initialiser formData avec les données existantes
   useEffect(() => {
     console.log('Received formData:', existingFormData);
@@ -588,6 +625,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     textAlign: 'center',
   },
+  
 });
 
 export default FeuilleDetail;

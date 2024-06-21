@@ -17,7 +17,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10, // Ajouter de l'espace vertical si nécessaire
   },
   classeurContainer: {
-    width: '48%', // Ajuster la largeur des éléments pour deux colonnes
+    width: '46%', // Ajuster la largeur des éléments pour deux colonnes
     aspectRatio: 1, // Assurer un aspect ratio carré ou ajuster selon vos besoins
     marginBottom: 10, // Espacement entre les éléments
   },
